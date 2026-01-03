@@ -18,33 +18,15 @@ function ENT:Initialize()
 	self:SetMoveType( MOVETYPE_VPHYSICS )
 	self:SetSolid( SOLID_VPHYSICS )
 	self:SetMaterial("spacebuild/SBLight5");
-	self.Inputs = WireLib.CreateSpecialInputs( self, {"Activate", "Forward", "Back", "SpeedAbs", "MoveLeft", "MoveRight", "Lateral", "MoveUp", "MoveDown", "Vertical", "RollLeft", "RollRight", "RollAbs",
-								"PitchUp", "PitchDown", "PitchAbs", "YawLeft", "YawRight", "YawAbs", "PitchMult", "YawMult", "RollMult", "ThrustMult", "MPH Limit", "Damper", "Level", "Roll Lock", "Freeze", "AimMode",
-								"AimX", "AimY", "AimZ", "AimVec"},{"NORMAL","NORMAL","NORMAL","NORMAL","NORMAL","NORMAL","NORMAL","NORMAL","NORMAL","NORMAL","NORMAL","NORMAL","NORMAL",
-								"NORMAL","NORMAL","NORMAL","NORMAL","NORMAL","NORMAL","NORMAL","NORMAL","NORMAL","NORMAL","NORMAL","NORMAL","NORMAL","NORMAL","NORMAL","NORMAL","NORMAL","NORMAL","NORMAL","VECTOR"} )
-	self.Outputs = WireLib.CreateSpecialOutputs(self, { "On", "Frozen", "Targeting Mode", "MPH", "KmPH", "Leveler", "Total Mass", "Props Linked", "Angles" }, { "NORMAL", "NORMAL", "NORMAL", "NORMAL", "NORMAL", "NORMAL", "NORMAL", "NORMAL", "ANGLE" })
+	self.Inputs = WireLib.CreateSpecialInputs( self, {"Activate", "Forward", "Back", "MoveLeft", "MoveRight", "MoveUp", "MoveDown", "RollLeft", "RollRight", "PitchUp", "PitchDown", "YawLeft", "YawRight", "MouseAngle", "MouseAim", "LinearSpeed", "TurnSpeed", "LinearAcceleration", "TurnAcceleration", "Level"},
+													 {"NORMAL", "NORMAL", "NORMAL", "NORMAL", "NORMAL", "NORMAL", "NORMAL", "NORMAL", "NORMAL", "NORMAL", "NORMAL", "NORMAL", "NORMAL", "ANGLE", "NORMAL", "NORMAL", "NORMAL", "NORMAL", "NORMAL", "NORMAL"},
+													 {"Send a value other than 0 to parent all (recursively) connected entities to this gyropod and enable motion.", "Send value from 0 to 1 to make ship move forward", "Send value from 0 to 1 to make ship move backward", "Send value from 0 to 1 to make ship strafe left", "Send value from 0 to 1 to make ship strafe right", "Send value from 0 to 1 to make ship hover up", "Send value from 0 to 1 to make ship hover down", "Send value from 0 to 1 to make ship roll left", "Send value from 0 to 1 to make ship roll right", "Send value from 0 to 1 to make ship pitch up", "Send value from 0 to 1 to make ship pitch down", "Send value from 0 to 1 to make ship turn left", "Send value from 0 to 1 to make ship turn right", "If MouseAim is not 0, make ship face in this direction", "If not 0, ship will rotate after MouseAngle. Can be Cam Controller CamAng or really any other angle.", "Value from 0 to 8192 defining ship's linear speed in units/second", "Value from 0 to 180 defining ships's spin speed in degrees/second", "How fast the ship will go from current speed to LinearSpeed", "How fast will ship go from current turn rate to TurnSpeed", "Make the ship level with ground. Used to avoid having to use complicated gate setups and E2/SF chips to do that manually."})
+	self.Outputs = WireLib.CreateSpecialOutputs(self, { "On", "Targeting Mode", "MPH", "KmPH", "Leveler", "Total Mass", "Props Linked", "Angles" }, { "NORMAL", "NORMAL", "NORMAL", "NORMAL", "NORMAL", "NORMAL", "NORMAL", "ANGLE" })
 	local phys = self:GetPhysicsObject()
 	if (IsValid(phys)) then
 		phys:Wake()
 	end
-	self.LogicCases = ents.FindByClass( "logic_case" )
-	self.AllGyroConstraints = {}
-	self.PhysTable = {}
-	self.FrontDist = {}
-	self.BackDist = {}
-	self.RightDist = {}
-	self.LeftDist = {}
-	self.MassTable = {}
-	self.MoveTable = {}
 	self.SystemOn = false
-	self.FreezeOn = false
-	self.AimModeOn = false
-	self.PMult = 1
-	self.RMult = 1
-	self.YaMult = 1
-	self.TMult = 1
-	self.SpdL = 250
-	self.Damper = 5
 	self.Forw = 0
 	self.Back = 0
 	self.SLeft = 0
@@ -57,34 +39,31 @@ function ENT:Initialize()
 	self.GyroPitchDown = 0
 	self.GyroYawLeft = 0
 	self.GyroYawRight = 0
-	self.GyroLvl = false
-	self.RollLock = false
-	self.TarPos = Vector(0, 0, 0)
-	self.ModeOut = 0
-	self.GyroMass = 0
-	self.GyroLevelerOut = 0
-	self.GyroParentIndex = 0
-	lastshipangle = Angle(0, 0, 0)
-	self.OnPlanet = true
-	self.GravTrigger = true
-	GyroPitchComp = 0
-	self.Debug = 0
-	self.GyroPitch = 0
-	self.GyroYaw = 0
-	self.PitchAbs = 0
-	self.RollAbs = 0
-	self.YawAbs = 0
-	self.SpAbs = 0
-	self.LatAbs = 0
-	self.VertAbs = 0
+
+	self.CurrentDirection = Vector()
+	self.CurrentRotation = Angle()
+	self.LinearSpeed = 1024
+	self.TurnSpeed = 90
+	self.LinearAcceleration = 1
+	self.TurnAcceleration = 1
+	self.MouseAim = false
+	self.MouseAngle = Angle()
 end
 
 function ENT:TriggerInput(iname, value)
 	if (iname == "Activate") then
 		if (value ~= 0) then
 			self.SystemOn = true
+			for _, part in pairs(constraint.GetAllConstrainedEntities(self)) do
+				part:SetParent(self)
+				part:GetPhysicsObject():EnableMotion(false)
+			end
 		else
 			self.SystemOn = false
+			for _, part in pairs(constraint.GetAllConstrainedEntities(self)) do
+				part:SetParent(nil)
+				part:GetPhysicsObject():EnableMotion(false)
+			end
 		end
 	elseif (iname == "Freeze") then
 		if (value ~= 0) then
@@ -99,133 +78,29 @@ function ENT:TriggerInput(iname, value)
 			self.AimModeOn = false
 		end
 	elseif (iname == "Forward") then
-		if (value ~= 0) then
-			self.Forw = 1
-		else
-			self.Forw = 0
-		end	
+		self.Forw = math.Clamp(value,0,1)
 	elseif (iname == "Back") then
-		if (value ~= 0) then
-			self.Back = 1
-		else
-			self.Back = 0
-		end
-	elseif (iname == "SpeedAbs") then
-		self.SpAbs = value
+		self.Back = math.Clamp(value,0,1)
 	elseif (iname == "MoveLeft") then
-		if (value ~= 0) then
-			self.SLeft = 1
-		else
-			self.SLeft = 0
-		end	
+		self.SLeft = math.Clamp(value,0,1)
 	elseif (iname == "MoveRight") then
-		if (value ~= 0) then
-			self.SRight = 1
-		else
-			self.SRight = 0
-		end
-	elseif (iname == "Lateral") then
-		self.LatAbs = value
+		self.SRight = math.Clamp(value,0,1)
 	elseif (iname == "MoveUp") then
-		if (value ~= 0) then
-			self.HUp = 1
-		else
-			self.HUp = 0
-		end		
+		self.HUp = math.Clamp(value,0,1)
 	elseif (iname == "MoveDown") then
-		if (value ~= 0) then
-			self.HDown = 1
-		else
-			self.HDown = 0
-		end	
-	elseif (iname == "Vertical") then
-		self.VertAbs = value
+		self.HDown = math.Clamp(value,0,1)
 	elseif (iname == "RollLeft") then
-		if (value ~= 0) then
-			self.RollLeft = 1
-		else
-			self.RollLeft = 0
-		end	
+		self.RollLeft = math.Clamp(value,0,1)
 	elseif (iname == "RollRight") then
-		if (value ~= 0) then
-			self.RollRight = 1
-		else
-			self.RollRight = 0
-		end
-	elseif (iname == "RollAbs") then
-		self.RollAbs = value
+		self.RollRight = math.Clamp(value,0,1)
 	elseif (iname == "PitchUp") then
-		if (value ~= 0) then
-			self.GyroPitchUp = 1
-		else
-			self.GyroPitchUp = 0
-		end	
+		self.GyroPitchUp = math.Clamp(value,0,1)
 	elseif (iname == "PitchDown") then
-		if (value ~= 0) then
-			self.GyroPitchDown = 1
-		else
-			self.GyroPitchDown = 0
-		end
-	elseif (iname == "PitchAbs") then
-		self.PitchAbs = value	
+		self.GyroPitchDown = math.Clamp(value,0,1)
 	elseif (iname == "YawLeft") then
-		if (value ~= 0) then
-			self.GyroYawLeft = 1
-		else
-			self.GyroYawLeft = 0
-		end	
+		self.GyroYawLeft = math.Clamp(value,0,1)
 	elseif (iname == "YawRight") then
-		if (value ~= 0) then
-			self.GyroYawRight = 1
-		else
-			self.GyroYawRight = 0
-		end
-	elseif (iname == "YawAbs") then
-		self.YawAbs = value	
-	elseif (iname == "PitchMult") then
-		if value ~= 0 then
-			self.PMult = value
-		else
-			self.PMult = 1
-		end	
-	elseif (iname == "YawMult") then
-		if value ~= 0 then
-			self.YaMult = value
-		else
-			self.YaMult = 1
-		end
-	elseif (iname == "RollMult") then
-		if value ~= 0 then
-			self.RMult = value
-		else
-			self.RMult = 1
-		end		
-	elseif (iname == "ThrustMult") then
-		if value ~= 0 then
-			self.TMult = value
-		else
-			self.TMult = 1
-		end	
-	elseif (iname == "AimX") then
-		self.TarPos.x = value
-	elseif (iname == "AimY") then
-		self.TarPos.y = value		
-	elseif (iname == "AimZ") then
-		self.TarPos.z = value
-	elseif (iname == "AimVec") then
-		self.TarPos = value
-	elseif (iname == "MPH Limit") then
-		if (value ~= 0) then
-			self.SpdL = math.Clamp(math.abs(value), 0, 999)
-		else
-			self.SpdL = 250
-		end	
-	elseif (iname == "Damper") then
-		if (value ~= 0) then
-			self.Damper = math.Clamp(math.abs(value), 0.1, 30)
-		else
-			self.Damper = 5
-		end	
+		self.GyroYawRight = math.Clamp(value,0,1)
 	elseif (iname == "Level") then
 		if (value ~= 0) then
 			self.GyroLevelerOut = 1
@@ -234,18 +109,52 @@ function ENT:TriggerInput(iname, value)
 			self.GyroLevelerOut = 0
 			self.GyroLvl = false
 		end		
-	elseif (iname == "Roll Lock") then
-		if (value ~= 0) then
-			--self.RollLockOut = 1
-			self.RollLock = true
-		else
-			--self.RollLockOut = 0
-			self.RollLock = false
-		end		
+	elseif (iname == "LinearSpeed") then
+		self.LinearSpeed = math.Clamp(value,0,16384)
+	elseif (iname == "TurnSpeed") then
+		self.TurnSpeed = math.Clamp(value,0,180)
+	elseif (iname == "LinearAcceleration") then
+		self.LinearAcceleration = math.Clamp(value,0,4)
+	elseif (iname == "TurnAcceleration") then
+		self.TurnAcceleration = math.Clamp(value,0,4)
+	elseif (iname == "MouseAim") then
+		if value ~= 0 then self.MouseAim = true else self.MouseAim = false end
+	elseif (iname == "MouseAngle") then
+		self.MouseAngle = value
 	end
 end
 
-function ENT:Think()	
+function ENT:Think()
+	if not self.SystemOn then self.CurrentDirection = Vector() self.CurrentRotation = Angle() return end
+	local input_direction = Vector(self.Forw-self.Back,self.SRight-self.SLeft,self.HUp-self.HDown)
+	self.CurrentDirection = LerpVector(FrameTime()*self.LinearAcceleration,self.CurrentDirection,input_direction)
+	self:SetPos(self:LocalToWorld(self.CurrentDirection*self.LinearSpeed*FrameTime()))
+
+	local input_rotation = Angle()
+	if self.MouseAim then
+		input_rotation = self.MouseAngle
+		self.CurrentRotation = Angle()
+		if self.GyroLvl then
+			self:SetAngles(LerpAngle(FrameTime()*self.TurnAcceleration,self:GetAngles(),Angle(0,input_rotation.y,0)))
+		else
+			self:SetAngles(LerpAngle(FrameTime()*self.TurnAcceleration,self:GetAngles(),input_rotation))
+		end
+	else
+		input_rotation = Angle(self.GyroPitchUp-self.GyroPitchDown,self.GyroYawLeft-self.GyroYawRight,self.RollRight-self.RollLeft)
+		self.CurrentRotation = LerpAngle(FrameTime()*self.TurnAcceleration,self.CurrentRotation,input_rotation)
+		if self.GyroLvl then
+			self:SetAngles(self:LocalToWorldAngles(self.TurnSpeed*Angle(0,self.CurrentRotation.y,0)*FrameTime()))
+		else
+			self:SetAngles(self:LocalToWorldAngles(self.TurnSpeed*self.CurrentRotation*FrameTime()))
+		end
+	end
+
+
+	self:NextThink(CurTime())
+	return true
+end
+
+function ENT:DontThink()	
 	
 	
 	

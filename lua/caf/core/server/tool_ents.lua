@@ -11,12 +11,12 @@ function CAFEnts.MakeEnt(tool, ply, Ang, Pos, class, type, sub_type, model, froz
 
 
     --Enable Check
-    if tool.EnableFunc then
+    --[[if tool.EnableFunc then
         if not tool.EnableFunc(ply) then
             CAF.POPUP(ply, CAF.GetLangVar("caf_stool_disabled"), "right", CAF.colors.red, 0.5);
             return
         end
-    end
+    end]]
 
     --Core Stuff
     if tool.Renamed then
@@ -68,7 +68,7 @@ function CAFEnts.MakeEnt(tool, ply, Ang, Pos, class, type, sub_type, model, froz
     end
 
     --Enabled Checks
-    if devinfo.group.EnableFunc then
+    --[[ if devinfo.group.EnableFunc then
         if not devinfo.group.EnableFunc(ply) then
             CAF.POPUP(ply, CAF.GetLangVar("caf_stool_entity_disabled"), "right", CAF.colors.red, 0.5);
             return
@@ -79,7 +79,7 @@ function CAFEnts.MakeEnt(tool, ply, Ang, Pos, class, type, sub_type, model, froz
             CAF.POPUP(ply, CAF.GetLangVar("caf_stool_entity_model_disabled"), "right", CAF.colors.red, 0.5);
             return
         end
-    end
+    end ]]
     if not CAF.AllowSpawn(type, sub_type, class, model) then
         return
     end

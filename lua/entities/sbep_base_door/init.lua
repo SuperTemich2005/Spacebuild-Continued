@@ -223,7 +223,6 @@ function ENT:Attach( ent , V , A )
 	self.VecOff	= Voff
 	self.AngOff	= Aoff
 	
-	self:GetPhysicsObject():EnableMotion( true )
 	ent:DeleteOnRemove( self )
 end
 
@@ -336,6 +335,15 @@ function ENT:Think()
 	if self.Cont then
 		if self:GetSkin() ~= self.Cont.Skin && self.Cont.Skin then
 			self:SetSkin( self.Cont.Skin )
+		end
+	end
+	if IsValid(self.ATEnt) then
+		self:GetPhysicsObject():EnableMotion(self.ATEnt:GetPhysicsObject():IsMotionEnabled())
+		
+		if IsValid(self.ATEnt:GetParent()) then self:SetParent(self.ATEnt:GetParent()) else self:SetParent(nil) end
+
+		if self.ATEnt:GetPos():Distance(self:GetPos()) > 1 and not self.ATEnt:GetPhysicsObject():IsMotionEnabled() then
+			self:Attach( self.ATEnt , self.VecOff , self.AngOff )
 		end
 	end
 	self:NextThink( CurTime() + 0.05 )

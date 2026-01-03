@@ -419,20 +419,26 @@ are all one -orientation - only.Then open cl_init .lua and make a new entry in t
             { type = "DWDH", pos = Vector(111.6, 0, 65.1), dir = Angle(0, 0, 0) },
             { type = "LRC5", pos = Vector(0, 0, 65.1), dir = Angle(0, 180, 0) }
         },
-        ["models/smallbridge/ship parts/sblandrampp.mdl"] = {},
-        ["models/smallbridge/ship parts/sblandramppdw.mdl"] = {},
-        ["models/smallbridge/ship parts/sblandramppdwdh.mdl"] = {},
+        ["models/smallbridge/ship parts/sblandrampp.mdl"] = {
+            { type = "LRC1", pos = Vector(), dir = Angle() }
+        },
+        ["models/smallbridge/ship parts/sblandramppdw.mdl"] = {
+            { type = "LRC3", pos = Vector(), dir = Angle() }
+        },
+        ["models/smallbridge/ship parts/sblandramppdwdh.mdl"] = {
+            { type = "LRC5", pos = Vector(0,0,61), dir = Angle() }
+        },
         ["models/smallbridge/ship parts/sblanduramp.mdl"] = {
             { type = "SWSH", pos = Vector(111.6, 0, 0), dir = Angle(0, 0, 0) },
-            { type = "LRC2", pos = Vector(0, 0, 0), dir = Angle(0, 180, 0) }
+            { type = "LRC1", pos = Vector(0, 0, 0), dir = Angle(0, 180, 0) }
         },
         ["models/smallbridge/ship parts/sblandurampdw.mdl"] = {
             { type = "DWSH", pos = Vector(111.6, 0, 0), dir = Angle(0, 0, 0) },
-            { type = "LRC4", pos = Vector(0, 0, 0), dir = Angle(0, 180, 0) }
+            { type = "LRC3", pos = Vector(0, 0, 0), dir = Angle(0, 180, 0) }
         },
         ["models/smallbridge/ship parts/sblandurampdwdh.mdl"] = {
             { type = "DWDH", pos = Vector(111.6, 0, 65.1), dir = Angle(0, 0, 0) },
-            { type = "LRC6", pos = Vector(0, 0, 65.1), dir = Angle(0, 180, 0) }
+            { type = "LRC5", pos = Vector(0, 0, 65.1), dir = Angle(0, 180, 0) }
         },
         ----------------------------------------------------------------------------------------------------------------------------------------
         ----------------------------------------------------------------------------------------------------------------------------------------
