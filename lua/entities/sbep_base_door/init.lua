@@ -339,9 +339,7 @@ function ENT:Think()
 	end
 	if IsValid(self.ATEnt) then
 		self:GetPhysicsObject():EnableMotion(self.ATEnt:GetPhysicsObject():IsMotionEnabled())
-		
 		if IsValid(self.ATEnt:GetParent()) then self:SetParent(self.ATEnt:GetParent()) else self:SetParent(nil) end
-
 		if self.ATEnt:GetPos():Distance(self:GetPos()) > 1 and not self.ATEnt:GetPhysicsObject():IsMotionEnabled() then
 			self:Attach( self.ATEnt , self.VecOff , self.AngOff )
 		end
